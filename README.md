@@ -36,7 +36,7 @@ pip install -e ".[ml]"
 ```
 
 ## Quick Start
-
+export PDK_ROOT="/usr/bin/miniconda3/share/pdk/"
 ```python
 from glayout import sky130, gf180, nmos ,pmos,via_stack
 
