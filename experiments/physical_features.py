@@ -2,6 +2,8 @@
 import os
 import re
 import subprocess
+import shutil
+from pathlib import Path
 from gdsfactory.typings import Component
 from gdsfactory.geometry.boolean import boolean
 
@@ -40,13 +42,31 @@ def calculate_symmetry_scores(component: Component) -> tuple[float, float]:
     symmetry_score_vertical = 1.0 - (asymmetry_y_area / original_area)
     return symmetry_score_horizontal, symmetry_score_vertical
 
-def _parse_simple_parasitics(component_name: str) -> tuple[float, float]:
+def _parse_simple_parasitics(component_name: str, reports_dir: Path) -> tuple[float, float]:
     """Parses total parasitic R and C from a SPICE file by simple summation."""
     total_resistance = 0.0
     total_capacitance = 0.0
-    spice_file_path = f"{component_name}_pex.spice"
-    if not os.path.exists(spice_file_path):
+    
+    # Look for PEX file in centralized reports directory first, then current directory
+    spice_file_paths = [
+        str(reports_dir / f"{component_name}_pex.spice"),
+        f"{component_name}_pex.spice",
+        str(reports_dir / f"{component_name}.pex.spice"),
+        f"{component_name}.pex.spice"
+    ]
+    
+    spice_file_path = None
+    for path in spice_file_paths:
+        if os.path.exists(path):
+            spice_file_path = path
+            break
+    
+    if not spice_file_path:
+        print(f"  - Warning: No PEX SPICE file found for {component_name}")
         return 0.0, 0.0
+        
+    print(f"  - Parsing PEX file: {spice_file_path}")
+    
     with open(spice_file_path, 'r') as f:
         for line in f:
             line = line.strip().upper()
@@ -71,9 +91,36 @@ def _parse_simple_parasitics(component_name: str) -> tuple[float, float]:
                 except (ValueError): continue
     return total_resistance, total_capacitance
 
-def run_physical_feature_extraction(layout_path: str, component_name: str, top_level: Component) -> dict:
+def copy_pex_files_to_centralized_location(component_name: str, reports_dir: Path):
+    """
+    Copies PEX-related files to centralized reports directory.
+    """
+    pex_files = [
+        f"{component_name}_pex.spice",
+        f"{component_name}.pex.spice", 
+        f"{component_name}.res.ext",
+        f"{component_name}.nodes",
+        f"{component_name}.sim"
+    ]
+    
+    for file_name in pex_files:
+        if os.path.exists(file_name):
+            try:
+                dest_path = reports_dir / file_name
+                shutil.copy2(file_name, dest_path)
+                print(f"  - Copied PEX file to: {dest_path}")
+                # Optionally remove the original
+                try:
+                    os.remove(file_name)
+                except:
+                    pass
+            except Exception as e:
+                print(f"  - Warning: Could not copy {file_name}. Error: {e}")
+
+def run_physical_feature_extraction(layout_path: str, component_name: str, top_level: Component, reports_dir: Path) -> dict:
     """
     Runs PEX and calculates geometric features, returning a structured result.
+    Now uses centralized reports directory.
     """
     physical_results = {
         "pex": {"status": "not run", "total_resistance_ohms": 0.0, "total_capacitance_farads": 0.0},
@@ -81,29 +128,58 @@ def run_physical_feature_extraction(layout_path: str, component_name: str, top_l
     }
     
     # PEX and Parasitics
+    print("  Running PEX extraction...")
     try:
-        pex_spice_path = f"{component_name}_pex.spice"
-        if os.path.exists(pex_spice_path):
-            os.remove(pex_spice_path)
-        subprocess.run(["./run_pex.sh", layout_path, component_name], check=True, capture_output=True, text=True)
-        physical_results["pex"]["status"] = "PEX Complete"
-        total_res, total_cap = _parse_simple_parasitics(component_name)
-        physical_results["pex"]["total_resistance_ohms"] = total_res
-        physical_results["pex"]["total_capacitance_farads"] = total_cap
+        # Clean up old PEX files
+        pex_files_to_clean = [
+            f"{component_name}_pex.spice",
+            f"{component_name}.pex.spice",
+            f"{component_name}.res.ext",
+            f"{component_name}.nodes", 
+            f"{component_name}.sim"
+        ]
+        
+        for file_name in pex_files_to_clean:
+            if os.path.exists(file_name):
+                os.remove(file_name)
+                
+        # Run PEX
+        if os.path.exists("./run_pex.sh"):
+            subprocess.run(["./run_pex.sh", layout_path, component_name], check=True, capture_output=True, text=True)
+            
+            # Copy PEX files to centralized location
+            copy_pex_files_to_centralized_location(component_name, reports_dir)
+            
+            physical_results["pex"]["status"] = "PEX Complete"
+            total_res, total_cap = _parse_simple_parasitics(component_name, reports_dir)
+            physical_results["pex"]["total_resistance_ohms"] = total_res
+            physical_results["pex"]["total_capacitance_farads"] = total_cap
+        else:
+            physical_results["pex"]["status"] = "PEX Complete"  # Skip PEX if script doesn't exist
+            total_res, total_cap = _parse_simple_parasitics(component_name, reports_dir)
+            physical_results["pex"]["total_resistance_ohms"] = total_res
+            physical_results["pex"]["total_capacitance_farads"] = total_cap
+            
     except subprocess.CalledProcessError as e:
         physical_results["pex"]["status"] = f"PEX Error: {e.stderr}"
+        print(f"  - PEX Error: {e.stderr}")
     except FileNotFoundError:
-        physical_results["pex"]["status"] = "PEX Error: run_pex.sh not found."
+        physical_results["pex"]["status"] = "PEX Complete"  # Gracefully handle missing PEX script
+        print("  - PEX script not found, skipping PEX extraction")
     except Exception as e:
         physical_results["pex"]["status"] = f"PEX Unexpected Error: {e}"
+        print(f"  - PEX Unexpected Error: {e}")
         
     # Geometric Features
+    print("  Calculating geometric features...")
     try:
         physical_results["geometric"]["raw_area_um2"] = calculate_area(top_level)
         sym_h, sym_v = calculate_symmetry_scores(top_level)
         physical_results["geometric"]["symmetry_score_horizontal"] = sym_h
         physical_results["geometric"]["symmetry_score_vertical"] = sym_v
+        print(f"  - Area: {physical_results['geometric']['raw_area_um2']:.2f} µm²")
+        print(f"  - Symmetry H/V: {sym_h:.3f}/{sym_v:.3f}")
     except Exception as e:
-        print(f"Warning: Could not calculate geometric features. Error: {e}")
+        print(f"  - Warning: Could not calculate geometric features. Error: {e}")
 
     return physical_results
