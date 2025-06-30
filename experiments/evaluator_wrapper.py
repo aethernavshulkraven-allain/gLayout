@@ -31,6 +31,7 @@ def run_evaluation(layout_path: str, component_name: str, top_level: Component) 
     files_to_delete = [
         f"{component_name}.res.ext",
         f"{component_name}.lvs.rpt",
+        f"{component_name}_lvs.rpt",
         f"{component_name}.nodes",
         f"{component_name}.sim",
         f"{component_name}.pex.spice",
