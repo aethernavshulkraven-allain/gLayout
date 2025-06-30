@@ -1,21 +1,21 @@
-from glayout.flow.pdk.mappedpdk import MappedPDK
-from glayout.flow.pdk.sky130_mapped import sky130_mapped_pdk
+from glayout.pdk.mappedpdk import MappedPDK
+from glayout.pdk.sky130_mapped import sky130_mapped_pdk
 from gdsfactory.cell import cell
 from gdsfactory.component import Component
 from gdsfactory import Component
-from glayout.flow.primitives.fet import nmos, pmos, multiplier
-from glayout.flow.pdk.util.comp_utils import evaluate_bbox, prec_center, prec_ref_center, align_comp_to_port
-from glayout.flow.pdk.util.snap_to_grid import component_snap_to_grid
-from glayout.flow.pdk.util.port_utils import rename_ports_by_orientation
-from glayout.flow.routing.straight_route import straight_route
-from c_route import c_route
-from glayout.flow.routing.L_route import L_route
-from glayout.flow.primitives.guardring import tapring
-from glayout.flow.pdk.util.port_utils import add_ports_perimeter
-from glayout.flow.spice.netlist import Netlist
-from glayout.flow.primitives.via_gen import via_stack
+from glayout.primitives.fet import nmos, pmos, multiplier
+from glayout.util.comp_utils import evaluate_bbox, prec_center, prec_ref_center, align_comp_to_port
+from glayout.util.snap_to_grid import component_snap_to_grid
+from glayout.util.port_utils import rename_ports_by_orientation
+from glayout.routing.straight_route import straight_route
+from glayout.routing.c_route import c_route
+from glayout.routing.L_route import L_route
+from glayout.primitives.guardring import tapring
+from glayout.util.port_utils import add_ports_perimeter
+from glayout.spice.netlist import Netlist
+from glayout.primitives.via_gen import via_stack
 from gdsfactory.components import text_freetype, rectangle
-from evaluator_n import evaluator
+from evaluator_wrapper import run_evaluation
 
 def fvf_netlist(fet_1: Component, fet_2: Component) -> Netlist:
 
@@ -167,6 +167,5 @@ fvf = sky130_add_fvf_labels(flipped_voltage_follower(sky130_mapped_pdk, width=(2
 fvf.show()
 fvf.name = "fvf"
 fvf_gds = fvf.write_gds("fvf.gds")
-result = evaluator("fvf.gds",fvf.name,fvf)
+result = run_evaluation("fvf.gds",fvf.name,fvf)
 print(result)
-

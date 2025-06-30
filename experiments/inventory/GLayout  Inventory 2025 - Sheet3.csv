@@ -1,0 +1,245 @@
+,pcell-name,Macro Used,Parameters,Netlist,Relative PATH*,description,parameter sweep,total no. of possible comb
+High confidence,Current Mirror,"two_n/pfet_interdigitized,  c_route, L_route, tapring","number of columns of the interdigitized fets,width,length#",Netlist - Manual; LVS-Ports not defined,"/blocks/elementary/current_mirror
+/current_mirror.py","An instantiable current mirror that returns a Component object. The current mirror is a two transistor interdigitized structure with a shorted source and gate. It can be instantiated with either nmos or pmos devices. It can also be instantiated with a dummy device, a substrate tap, and a tie layer, and is centered at the origin. Transistor A acts as the reference and Transistor B acts as the mirror fet
+
+    Args:
+        pdk (MappedPDK): the process design kit to use
+        numcols (int): number of columns of the interdigitized fets
+        device (str): nfet or pfet (can only interdigitize one at a time with this option)
+        with_dummy (bool): True places dummies on either side of the interdigitized fets
+        with_substrate_tap (bool): boolean to decide whether to place a substrate tapring
+        with_tie (bool): boolean to decide whether to place a tapring for tielayer
+        tie_layers (tuple[str,str], optional): the layers to use for the tie. Defaults to (""met2"",""met1"").
+        **kwargs: The keyword arguments are passed to the two_nfet_interdigitized or two_pfet_interdigitized functions and need to be valid arguments that can be accepted by the multiplier function
+
+    Returns:
+        Component: a current mirror component object","type:[nmos,pmos]
+numcols:[1,5,1]
+width[0.5,20,0.25]
+length[0.15,4,0.2]",15800
+,Differential Pair,"n/pmos,  route_quad, c_route, straight_route,  tapring ","width, fingers,length, short_source#",Netlist - Auto; LVS-ready,"/blocks/elementary/diff_pair
+/diff_pair.py","create a diffpair with 2 transistors placed in two rows with common centroid place. Sources are shorted
+	width = width of the transistors
+	fingers = number of fingers in the transistors (must be 2 or more)
+	length = length of the transistors, None or 0 means use min length
+	short_source = if true connects source of both transistors
+	n_or_p_fet = if true the diffpair is made of nfets else it is made of pfets
+	substrate_tap: if true place a tapring around the diffpair (connects on met1)","type:[nmos,pmos]
+width[0.5,20,0.25]
+length[0.15,4,0.2]
+fingers:[1,5,1]
+short_source[True,False]",31600
+,Flipped Voltage Follower,"n/pmos,  L_route, c_route, straight_route,  tapring , via_stack","width, fingers,length, multipliers, placements#",Netlist - Auto; LVS-ready,"/blocks/elementary/FVF
+/fvf.py","Creates a Flipped Voltage Follower (FVF) layout using either NMOS or PMOS transistors.
+
+    This is a commonly used analog buffer topology where the output tracks the input voltage 
+    but can drive a larger load due to feedback through an additional transistor.
+
+    pdk: pdk to use
+    device_type: either ""nmos"" or ""pmos""
+    placement: either ""horizontal"" or ""vertical""
+    width: (input fet, feedback fet)
+    length: (input fet, feedback fet)
+    fingers: (input fet, feedback fet)
+    multipliers: (input fet, feedback fet)
+    dummy_1: dummy for input fet
+    dummy_2: dummy for feedback fet
+    tie_layers1: tie layers for input fet
+    tie_layers2: tie layers for feedback fet
+    sd_rmult: sd_rmult for both fets
+    **kwargs: any kwarg that is supported by nmos and pmos","type:[nmos,pmos]
+width[0.5,10,0.25] x 2
+length[0.15,4,0.2] x 2
+fingers:[1,5,1] x 2
+multipliers:[1,2,1] x 2
+placement[horizontal,vertical]",243360000
+,Transmission Gate,"n/pmos, L_route, c_route, straight_route, tapring, via_stack","width, length, fingers, multipliers,#",Netlist -Auto; LVS-ready,/blocks/elementary/transmission_gate/transmission_gate.py,"
+Generates a layout for a CMOS transmission gate using parallel NMOS and PMOS devices.
+
+A transmission gate acts as a bidirectional switch controlled by complementary gate signals. 
+The NMOS and PMOS transistors are connected in parallel between the input and output nodes. 
+The NMOS gate is driven by the control signal, while the PMOS gate is driven by its complement.
+    tuples are in (NMOS,PMOS) order
+    **kwargs are any kwarg that is supported by nmos and pmos","width[0.5,10,0.25] x 2
+length[0.15,4,0.2] x 2
+fingers:[1,5,1] x 2
+multipliers:[1,2,1] x 2",60840000
+,Resistor (Diode Connected PFET),"n/pmos, L_route, c_route, straight_route, tapring, via_stack","width, length, num_series",No Netlist,/flow/primitives/resistor.py,"This cell represents a diode connected pfet which acts as a programmable resistor. The small signal resistance is modelled by (1/gm)||r_0, where gm is the fet's transconductance and r0 is the small signal output impedance. The cell can be instantiated with any choice of width and length. The number of resistors connected in series can be controlled using numseries (**note: they will be placed in a single line, so area saving has to be manually handled). The number of resistors in parallel connnection can be controlled using multipliers. 
+    Note that parallel and series resistors can be used simultaneously, but the parallel-ness will be applied to all resistors in series. The cell can be used and routed separately should a more complex combination of resistances be required
+
+    Args:
+        pdk (MappedPDK): the process design kit to be used
+        width (float, optional): the width of each pfet. Defaults to 5.
+        length (float, optional): the length of each pfet. Defaults to 1.
+        num_series (int, optional): the number of pfets connected in series. Defaults to 1.
+        with_substrate_tap (bool, optional): the presence of substrate tap. Defaults to False.
+        with_tie (bool, optional): the presence of tie. Defaults to False.
+        with_dnwell (bool, optional): the presence of dnwell. Defaults to False.
+        rmult (Optional[int], optional): the routing multiplier (controls routing width). Defaults to None.
+        multipliers (int, optional): the number of pfets connected in parallel. Defaults to 1.
+        substrate_tap_layers (tuple[str, str], optional): the layers in the substrate tapring. Defaults to (""met2"", ""met1"").
+        tie_layers (tuple[str, str], optional): the layers in the tie layer tapring. Defaults to (""met2"", ""met1"").
+
+    Returns:
+        Component: an instance of the resistor cell","width[0.5,25,0.5]
+length[0.15,4,0.2]
+num_series[1,20,1]",20000
+,Mimcap_array,,"rows,columns,size (tuple)",Netlist-Auto;LVS-ready,/flow/primitives/mimcap.py,"create mimcap array
+	args:
+	pdk to use
+	size = tuple(float,float) size of a single cap
+	****Note: size is the size of the capmet layer
+	ports:
+	cap_x_y_top_met_...all edges, this is the metal over the capmet in row x, col y
+	cap_x_y_bottom_met_...all edges, this is the metal below capmet in row x, col y
+	""""""","rows[1,50,1]
+columns[1,50,1]
+size[0.5,50,0.5]x2",250000
+Medium confidence,Cross Coupled Inverter,"generic_4T_interdigitized, smart route","ccinvs_length, ccinvs_fingers",No Netlist,/blocks/composite/cross_coupled_inverter/CrossCoupledInverters.py," Creates a layout cell for a cross-coupled inverter pair using interdigitated NMOS and PMOS transistors.
+
+    This structure is commonly used in SRAM bitcells, sense amplifiers, and positive feedback circuits.
+    The cell includes automatic device placement and routing of key nodes such as shared gates and cross-coupled drains.
+
+    Args:
+        pdk (MappedPDK): The process design kit used to access design rules and transistor parameters.
+        ccinvs_length (float): Channel length (L) of the NMOS and PMOS devices in microns.
+        ccinvs_fingers (int): Number of interdigitated fingers (columns) for both NMOS and PMOS transistors.
+
+    Returns:
+        Component: A GDS component containing the placed and routed cross-coupled inverters.","ccinvs_length[0.15,4,0.2]
+ccinvs_fingers[1,10,1]",200
+,Low Voltage Current Mirror,"n/pmos,  L_route, c_route, straight_route,  tapring , via_stack, fvf","width,length,fingers,multipliers",Netlist-Auto;LVS-ready,/blocks/composite/fvf_based_ota/low_voltaeg_cmirror.py,"Low Voltage N-type Current Mirror block with two input and two output branches.
+
+This block implements a low voltage current mirror consisting of 8 NMOS transistors.
+Seven of the NMOS transistors share the same width, fingers, and multiplier, while one transistor 
+ has smaller width (typically about one-third of the others) 
+and operates in the triode region.
+
+The sizing and arrangement enable mirroring of a reference current around 10 µA under typical conditions.
+
+Parameters
+----------
+width : tuple of floats
+    Channel widths (W) for the NMOS devices in micrometers (µm).
+    The first element is the width of the seven identical devices.
+    The second element is the width of the smaller transistor in triode region (typically ~w/3).
+
+length : float
+    The channel length (L) common to all NMOS transistors in micrometers (µm).
+    Affects transistor switching speed and output impedance.
+
+fingers : tuple of ints
+    Number of fingers for the NMOS devices.
+    The first element corresponds to the seven identical devices.
+    The second element corresponds to the smaller triode device.
+
+multipliers : tuple of ints
+    Multiplication factors for the NMOS devices (number of parallel transistor units).
+    The first element applies to the seven identical devices.
+    The second element applies to the smaller triode device.","width[0.5,10,0.25] x 2
+length[0.15,4,0.2]
+fingers:[1,5,1] x 2
+multipliers:[1,2,1] x 2",3042000
+,Differential to single ended converter,"n/pmos,  multiplier, L_route, c_route, straight_route,  tapring , via_stack, via_array ","rmult, half_pload, via_xlocation",Netlist-Manual; LVS-ready,"    blocks/composite/differential_to_single_ended_converter/differential_to_single_ended_converter.py
+"," Creates a differential-to-single-ended converter layout using shared-gate PMOS components.
+
+    This function builds and routes a layout that converts differential signals to a single-ended output.
+    It does so by instantiating PMOS pairs with a shared gate and performing the required interconnections.
+    The layout is based on shared active and dummy structures for symmetry and matching.
+
+    Parameters
+    ----------
+    pdk : MappedPDK
+        The process design kit mapping that provides access to layer definitions, device generators, and routing rules.
+    rmult : int
+        The resistor multiplier or general scaling factor used in layout generation (e.g., number of fingers or unit width multiplier).
+    half_pload : tuple[float, float, int]
+        A 3-tuple representing:
+            - width (float): The transistor width
+            - length (float): The transistor length
+            - fingers (int): The number of fingers per half of the differential pair
+    via_xlocation : Any
+        Parameter controlling where vias are placed horizontally. Used in routing to control via alignment.","rmult[1,3,1]
+half_pload[0.5,10,0.25]x[0.15,4,0.2]x[1,5,1]",11700
+,Differential pair current mirror bias,"n/pmos,  multiplier, L_route, c_route, straight_route,  tapring , via_stack, via_array, diff_pair","  half_diffpair_params,
+    diffpair_bias,
+    rmult,  with_antenna_diode_on_diffinputs",Netlist-Auto;LVS-ready,    /blocks/composite/diffpair_cmirror_bias/diff_pair_cmirrorbias.py,"Constructs a differential pair with an NMOS tail current source and optional antenna protection diodes.
+
+    This layout function generates a symmetrical differential pair (centered layout) using PMOS or NMOS devices,
+    and includes:
+    - Matched differential transistors (the core of the diff-pair)
+    - A tail current source implemented as an interdigitated NMOS current mirror
+    - Optionally, antenna protection NMOS diodes connected to the gates of the diff-pair inputs
+
+    Parameters
+    ----------
+    pdk : MappedPDK
+        The process design kit, providing access to design rules, layer definitions, device constructors, etc.
+
+    half_diffpair_params : tuple[float, float, int]
+        A tuple containing (width, length, fingers) for each half of the differential pair transistors.
+
+    diffpair_bias : tuple[float, float, int]
+        A tuple specifying the tail current source parameters as (width, length, numcols), used to size the NMOS current mirror.
+
+    rmult : int
+        Routing or device replication multiplier (for increasing layout density or routing robustness).
+
+    with_antenna_diode_on_diffinputs : int
+        If > 0, antenna protection diodes will be added on the gates of the differential inputs (useful for ESD protection or during fabrication).","half_diffpair_params[0.5,10,0.25]x[0.15,4,0.2]x[1,5,1]
+diffpair_bias[0.5,10,0.25]x[0.15,4,0.2]x[1,5,1]
+rmult[1,3,1]",45630000
+Lower confidence,Opamp,"n/pmos,  L_route, c_route, straight_route,  tapring , via_stack, via_array, two_nfet_interdigitized, opamp_twostage","half_diffpair_params,    diffpair_bias,
+    half_common_source_params,
+    half_common_source_bias,
+    output_stage_params,
+    output_stage_bias,
+    half_pload,
+    mim_cap_size,
+    mim_cap_rows,
+    rmult,  with_antenna_diode_on_diffinputs,  add_output_stage",Netlist-Auto;LVS-ready,/blocks/composite/opamp/opamp.py," create a two stage opamp with an output buffer, args->
+    pdk: pdk to use
+    half_diffpair_params: diffpair (width,length,fingers)
+    diffpair_bias: bias transistor for diffpair nmos (width,length,fingers). The ref and output of the cmirror are identical
+    half_common_source_params: pmos top component amp (width,length,fingers,mults)
+    half_common_source_bias: bottom L/R large nmos current mirror (width,length,fingers,mults). The ref of the cmirror always has 1 multplier. multiplier must be >=2
+    ****NOTE: change the multiplier option to change the relative sizing of the current mirror ref/output
+    output_stage_amp_params: output amplifier transistor params (width, length, fingers)
+    output_stage_bias: output amplifier current mirror params (width, length, fingers). The ref and output of the cmirror are identical
+    half_pload: all 4 pmos load transistors of first stage (width,length,...). The last element in the tuple is the fingers of the bottom two pmos.
+    mim_cap_size: width,length of individual mim_cap
+    mim_cap_rows: number of rows in the mimcap array (always 2 cols)
+    rmult: routing multiplier (larger = wider routes)
+    with_antenna_diode_on_diffinputs: adds antenna diodes with_antenna_diode_on_diffinputs*(1um/0.5um) on the positive and negative inputs to the opamp","half_diffpair_params[5,7,0.5]x[0.5,1.5,0.5]x[1,2,1]
+diffpair_bias[5,7,0.5]x[1.5,2.5,0.5]x[1,2,1]
+half_common_source_params[6,8,0.5]x[0.5,1.5,0.5]x[8,12,1]
+half_common_source_bias[5,7,0.5]x[1.5,2.5,0.5]x[7,9,1]
+half_pload[5,7,0.5]x[0.5,1.5,0.5]x[4,6,1]
+add_output_stage[True,False]
+if add_output_stage=True :- 
+output_stage_params[4,6,0.5]x[0.5,1.5,0.5]
+output_stage_bias[5,7,0.5]x[1.5,2.5,0.5]x[3,5,1]",92400750000
+,Super class AB OTA,"n/pmos,  L_route, c_route, straight_route,  tapring , via_stack, via_array, current_mirror, n_block, p_block","input_pair_params,
+        fvf_shunt_params,
+        local_current_bias_params,
+        diff_pair_load_params,
+        ratio,
+        current_mirror_params,
+        resistor_params,
+        global_current_bias_params,",Netlist-Auto;LVS-ready,/blocks/composite/fvf_based_ota/ota.py,"creates a super class AB OTA using flipped voltage follower at biasing stage and local common mode feedback to give dynamic current and gain boost much less dependent on biasing current
+    pdk: pdk to use
+    input_pair_params: differential input pair(N-type) - (width,length), input nmoses of the fvf get the same dimensions
+    fvf_shunt_params: feedback fet of fvf - (width,length)
+    local_current_bias_params: local currrent mirror which directly biases each fvf - (width,length)
+    diff_pair_load_params: creates a p_block consisting of both input stage pmos loads and output stage pmoses - (width,length) 
+    ratio: current mirroring ratio from input stage to output stage
+    current_mirror_params: output stage N-type currrent mirrors - (width, length)
+    resistor_params: passgates are used as resistors for LCMFB - (width of nmos, width of pmos,length of nmos, length of pmos)
+    global_current_bias_params: A low voltage current mirror for biasing - consists of 7 nmoses of (W/L) and one nmos of (W'/L) - (W,W',L)","input_pair_params[3,5,0.5]x[1.5,2.5,0.25]
+fvf_shunt_params[2,4,0.25]x[0.5,1.5,0.5]
+local_current_bias_params[3,4,0.25]x[2.5,3.5,0.25]
+diff_pair_load_params[7,12,1]
+ratio[1,2,1]
+current_mirror_params[1.5,3,0.25]x[0.5,1.5,0.5]
+resistor_params[0.5,1,0.1]x[2.5,3.5,0.25]
+global_current_bias_params[8,9,0.1]x[1,3,0.2]",18523890000

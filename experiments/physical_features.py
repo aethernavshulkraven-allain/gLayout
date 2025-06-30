@@ -2,6 +2,8 @@
 import os
 import re
 import subprocess
+import shutil
+from pathlib import Path
 from gdsfactory.typings import Component
 from gdsfactory.geometry.boolean import boolean
 
